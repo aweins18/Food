@@ -5,7 +5,9 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.StrictMode;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
@@ -68,14 +70,19 @@ public class LoginActivity extends Activity {
 
     public boolean oneOfUs = false;
 
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
 
+        StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
+        StrictMode.setThreadPolicy(policy);
+
         ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
         executor.scheduleAtFixedRate(refreshRunnable, 0, 30, TimeUnit.SECONDS);
-        try{client.connectToServer();}catch(IOException e){System.out.println(e);};
+        try{client.connectToServer();System.out.println("Past connect");}catch(IOException e){System.out.println(e);};
 
         final Button buttonSI = (Button) findViewById(R.id.sign_in_button);
         final Button buttonR = (Button) findViewById(R.id.register_button);
@@ -119,6 +126,12 @@ public class LoginActivity extends Activity {
                 buttonR.setVisibility(View.INVISIBLE);
             }
         });
+
+        submit_button.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v){
+                attemptLogin();
+            }
+        });
     }
 
     /**
@@ -143,23 +156,23 @@ public class LoginActivity extends Activity {
             };
             if(log){
                 try{client.setUp();}catch(IOException e){System.out.print(e);};
-
             }
 
 
         } else {
             //Register
-            if(pass.getText().toString().equals(pass2.getText().toString()) && !pass.getText().toString().equals("") &&
-                    !user.getText().toString().equals("") && !first.getText().toString().equals("") && !last.getText().toString().equals("")) {
-                try{
-                    if(!client.signup(user.getText().toString(), pass.getText().toString(), first.getText().toString(), last.getText().toString()))
-                        showSimplePopUp("Commas ',' are not allowed");
-                }catch(IOException e){System.out.println(e);};
+            if(!pass.getText().toString().equals("") && !user.getText().toString().equals("") && !first.getText().toString().equals("") && !last.getText().toString().equals("")) {
+                if(pass.getText().toString().equals(pass2.getText().toString())) {
+                    try {
+                        if (!client.signup(user.getText().toString(), pass.getText().toString(), first.getText().toString(), last.getText().toString()))
+                            showSimplePopUp("Commas ' , ' are not allowed");
+                    } catch (IOException e) {
+                        System.out.println(e);
+                    }
+                } else showSimplePopUp("Passwords don't match, please try again");
             } else showSimplePopUp("Please fill in all fields");
         }
     }
-
-
 
     /**
      @Override public void onStart() {
@@ -203,20 +216,13 @@ public class LoginActivity extends Activity {
 
 
     private void showSimplePopUp(String message) {
-        final EditText text = new EditText(this);
+        AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this);
 
-        new AlertDialog.Builder(this)
+        alertDialogBuilder
                 .setTitle("Error")
                 .setMessage(message)
-                .setView(text)
                 .setPositiveButton("Ok", new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int whichButton) {
-                        String Response = text.getText().toString();
-                    }
-                })
-                .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int whichButton) {
-                    }
+                    public void onClick(DialogInterface dialog, int id) {}
                 })
                 .show();
         }

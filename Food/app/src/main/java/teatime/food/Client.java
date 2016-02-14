@@ -65,6 +65,7 @@ public class Client {
     }
 
     public void connectToServer() throws IOException{
+        System.out.println("In CTS");
         String serverName = "149.125.68.143";
         int port = 5001;
 
@@ -73,7 +74,7 @@ public class Client {
         out = new DataOutputStream(outToServer);
         inFromServer = client.getInputStream();
         in =  new DataInputStream(inFromServer);
-        System.out.println("CONNECTED TO: " + client.getRemoteSocketAddress());
+        //System.out.println("CONNECTED TO: " + client.getRemoteSocketAddress());
     }
 
 
@@ -89,7 +90,7 @@ public class Client {
             if(last.charAt(i) == ',') noCommas = false;
         String send = "1,"+user+","+pass+","+first+","+last+","+"8457295732";
         if(noCommas) {
-            out.writeUTF(user);
+            out.writeUTF(send);
             out.flush();
             try {
                 String message = in.readUTF();
