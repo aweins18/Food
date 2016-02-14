@@ -1,33 +1,21 @@
 package teatime.food;
 
-import android.animation.Animator;
-import android.animation.AnimatorListenerAdapter;
-import android.annotation.TargetApi;
-import android.content.pm.PackageManager;
-import android.support.annotation.NonNull;
-import android.support.design.widget.Snackbar;
 import android.app.Activity;
 
-import android.net.Uri;
-import android.os.AsyncTask;
-
-import android.os.Build;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
+import android.content.Intent;
 import android.os.Bundle;
-import android.provider.ContactsContract;
-import android.text.TextUtils;
-import android.view.KeyEvent;
 import android.view.View;
 import android.view.View.OnClickListener;
-import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.TextView;
 
-import com.google.android.gms.appindexing.Action;
-import com.google.android.gms.appindexing.AppIndex;
-import com.google.android.gms.common.api.GoogleApiClient;
+import java.io.IOException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
-import static android.Manifest.permission.READ_CONTACTS;
 
 /**
  * A login screen that offers login via email/password.
@@ -47,22 +35,47 @@ public class LoginActivity extends Activity {
             "foo@example.com:hello", "bar@example.com:world"
     };
 
+    Client client = new Client();
+
+//    Runnable refreshRunnable = new Runnable() {
+//        public void run() {
+//            try {
+//                client.refresh();
+//            } catch (IOException e) {
+//                e.printStackTrace();
+//            }
+//        }
+//
+//    };
+
+    Runnable refreshRunnable = new Runnable() {
+        public void run() {
+            try {
+                client.refresh();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+    };
+
+
     // UI references.
     private EditText mUserView;
     private EditText mPasswordView;
     private View mProgressView;
     private View mLoginFormView;
-    /**
-     * ATTENTION: This was auto-generated to implement the App Indexing API.
-     * See https://g.co/AppIndexing/AndroidStudio for more information.
-     */
-    private GoogleApiClient client;
 
+    public boolean oneOfUs = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
+
+        ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
+        executor.scheduleAtFixedRate(refreshRunnable, 0, 30, TimeUnit.SECONDS);
+        try{client.connectToServer();}catch(IOException e){System.out.println(e);};
 
         final Button buttonSI = (Button) findViewById(R.id.sign_in_button);
         final Button buttonR = (Button) findViewById(R.id.register_button);
@@ -70,6 +83,7 @@ public class LoginActivity extends Activity {
 
         final EditText user = (EditText) findViewById(R.id.user);
         final EditText pass = (EditText) findViewById(R.id.password);
+        final EditText pass2 = (EditText) findViewById(R.id.password2);
         final EditText first = (EditText) findViewById(R.id.firstname);
         final EditText last = (EditText) findViewById(R.id.lastname);
 
@@ -83,6 +97,7 @@ public class LoginActivity extends Activity {
                 submit_button.setVisibility(View.VISIBLE);
                 buttonSI.setVisibility(View.INVISIBLE);
                 buttonR.setVisibility(View.INVISIBLE);
+                oneOfUs = true;
             }
         });
 
@@ -92,6 +107,8 @@ public class LoginActivity extends Activity {
                 user.setHint("Username");
                 pass.setVisibility(View.VISIBLE);
                 pass.setHint("Password");
+                pass2.setVisibility(View.VISIBLE);
+                pass2.setHint("Confirm Password");
                 first.setVisibility(View.VISIBLE);
                 first.setHint("First Name");
                 last.setVisibility(View.VISIBLE);
@@ -102,13 +119,6 @@ public class LoginActivity extends Activity {
                 buttonR.setVisibility(View.INVISIBLE);
             }
         });
-
-        submit_button.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                attemptLogin();
-            }
-        });
     }
 
     /**
@@ -117,8 +127,38 @@ public class LoginActivity extends Activity {
      * errors are presented and no actual login attempt is made.
      */
     private void attemptLogin() {
-        
+        EditText user = (EditText) findViewById(R.id.user);
+        EditText pass = (EditText) findViewById(R.id.password);
+        EditText pass2 = (EditText) findViewById(R.id.password2);
+        EditText first = (EditText) findViewById(R.id.firstname);
+        EditText last = (EditText) findViewById(R.id.lastname);
+
+        if(oneOfUs){
+            //Sign In
+            boolean log = false;
+            try{
+                log = client.login();
+            }catch(IOException e){
+                System.out.print(e);
+            };
+            if(log){
+                try{client.setUp();}catch(IOException e){System.out.print(e);};
+
+            }
+
+
+        } else {
+            //Register
+            if(pass.getText().toString().equals(pass2.getText().toString()) && !pass.getText().toString().equals("") &&
+                    !user.getText().toString().equals("") && !first.getText().toString().equals("") && !last.getText().toString().equals("")) {
+                try{
+                    if(!client.signup(user.getText().toString(), pass.getText().toString(), first.getText().toString(), last.getText().toString()))
+                        showSimplePopUp("Commas ',' are not allowed");
+                }catch(IOException e){System.out.println(e);};
+            } else showSimplePopUp("Please fill in all fields");
+        }
     }
+
 
 
     /**
@@ -160,5 +200,27 @@ public class LoginActivity extends Activity {
      client.disconnect();
      }
      */
+
+
+    private void showSimplePopUp(String message) {
+        final EditText text = new EditText(this);
+
+        new AlertDialog.Builder(this)
+                .setTitle("Error")
+                .setMessage(message)
+                .setView(text)
+                .setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int whichButton) {
+                        String Response = text.getText().toString();
+                    }
+                })
+                .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int whichButton) {
+                    }
+                })
+                .show();
+        }
+
+
 }
 
