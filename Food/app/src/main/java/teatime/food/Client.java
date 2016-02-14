@@ -56,7 +56,6 @@ public class Client {
             }
 
         };
-        Client thissucks = new Client();
 
         ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
         executor.scheduleAtFixedRate(refreshRunnable, 0, 30, TimeUnit.SECONDS);
@@ -65,7 +64,6 @@ public class Client {
     }
 
     public void connectToServer() throws IOException{
-        System.out.println("In CTS");
         String serverName = "149.125.68.143";
         int port = 5001;
 
@@ -78,34 +76,37 @@ public class Client {
     }
 
 
-    public boolean signup(String user, String pass, String first, String last) throws IOException{
-        boolean noCommas = true;
+    public String signup(String user, String pass, String first, String last) throws IOException{
+        String ret = "true";
+        String comma = "Commas [ , ] are not allowed";
         for(int i = 0; i < user.length(); i++)
-            if(user.charAt(i) == ',') noCommas = false;
+            if(user.charAt(i) == ',') ret = comma;
         for(int i = 0; i < pass.length(); i++)
-            if(pass.charAt(i) == ',') noCommas = false;
+            if(pass.charAt(i) == ',') ret = comma;
         for(int i = 0; i < first.length(); i++)
-            if(first.charAt(i) == ',') noCommas = false;
+            if(first.charAt(i) == ',') ret = comma;
         for(int i = 0; i < last.length(); i++)
-            if(last.charAt(i) == ',') noCommas = false;
+            if(last.charAt(i) == ',') ret = comma;
         String send = "1,"+user+","+pass+","+first+","+last+","+"8457295732";
-        if(noCommas) {
+        if(ret.equals("true")) {
             out.writeUTF(send);
             out.flush();
             try {
                 String message = in.readUTF();
                 if (message.equals("0")) {
-                    System.out.println("Username already in use");
-                } else if (message.length() == 8) {
+                    ret = "Username already in use";
+                } else if (message.length() > 0) {
                     userID = message;
+                    System.out.println(message);
                 } else {
-                    System.out.println("ERROR, INVALID ID");
+                    System.out.println("THIS IS A MESSAGE FROM AARON: " + message);
+                    ret = "Invalid UserID";
                 }
             } catch (IOException e) {
                 System.out.println(e);
             }
         }
-        return noCommas;
+        return ret;
 
     }
     public void testServer() throws IOException{

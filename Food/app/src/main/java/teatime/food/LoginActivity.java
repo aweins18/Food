@@ -3,17 +3,24 @@ package teatime.food;
 import android.app.Activity;
 
 import android.app.AlertDialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.database.Cursor;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.StrictMode;
+import android.provider.ContactsContract;
+import android.telephony.TelephonyManager;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
 import android.widget.EditText;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -38,6 +45,7 @@ public class LoginActivity extends Activity {
     };
 
     Client client = new Client();
+
 
 //    Runnable refreshRunnable = new Runnable() {
 //        public void run() {
@@ -69,8 +77,6 @@ public class LoginActivity extends Activity {
     private View mLoginFormView;
 
     public boolean oneOfUs = false;
-
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -146,6 +152,11 @@ public class LoginActivity extends Activity {
         EditText first = (EditText) findViewById(R.id.firstname);
         EditText last = (EditText) findViewById(R.id.lastname);
 
+
+
+        String number;
+
+
         if(oneOfUs){
             //Sign In
             boolean log = false;
@@ -164,8 +175,8 @@ public class LoginActivity extends Activity {
             if(!pass.getText().toString().equals("") && !user.getText().toString().equals("") && !first.getText().toString().equals("") && !last.getText().toString().equals("")) {
                 if(pass.getText().toString().equals(pass2.getText().toString())) {
                     try {
-                        if (!client.signup(user.getText().toString(), pass.getText().toString(), first.getText().toString(), last.getText().toString()))
-                            showSimplePopUp("Commas ' , ' are not allowed");
+                        String message = client.signup(user.getText().toString(), pass.getText().toString(), first.getText().toString(), last.getText().toString());
+                        if(!message.equals("true"))showSimplePopUp(message);
                     } catch (IOException e) {
                         System.out.println(e);
                     }
@@ -173,6 +184,7 @@ public class LoginActivity extends Activity {
             } else showSimplePopUp("Please fill in all fields");
         }
     }
+
 
     /**
      @Override public void onStart() {
@@ -214,7 +226,6 @@ public class LoginActivity extends Activity {
      }
      */
 
-
     private void showSimplePopUp(String message) {
         AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this);
 
@@ -226,7 +237,6 @@ public class LoginActivity extends Activity {
                 })
                 .show();
         }
-
 
 }
 
